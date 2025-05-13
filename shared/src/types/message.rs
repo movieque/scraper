@@ -1,9 +1,6 @@
 use aws_sdk_sqs::types::SendMessageBatchRequestEntry;
 use serde::{Serialize, Deserialize};
-use super::{Dataset, Error};
-
-
-pub type Result<T> = std::result::Result<T, Error>;
+use super::{Dataset, Error, Result};
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
