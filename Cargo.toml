@@ -1,10 +1,8 @@
 [workspace]
+resolver = "2"
 members = [
     "exporter",
     "syncer",
     "collector",
     "shared"
 ]
-
-
-workspace.resolver = "2"
