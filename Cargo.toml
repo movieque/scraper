@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "exporter",
+    "syncer",
+    "collector",
+    "shared"
+]
+
+
+workspace.resolver = "2"
