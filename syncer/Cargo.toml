@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = { version = "0.4.41", features = ["serde"] }
+futures = "0.3.31"
+lambda_runtime = "0.13.0"
+openssl = { version = "0.10.72", features = ["vendored"] }
+reqwest = { version = "0.12.15", features = ["rustls-tls", "json"] }
+serde = { version = "1.0.219", features = ["derive"] }
+shared = {path = "../shared"}
+static_init = "1.0.4"
+tokio = { version = "1", features = ["full"] }
