@@ -1,5 +1,7 @@
 use serde::{Serialize, Deserialize};
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+use super::Error;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -40,6 +42,24 @@ impl Display for Dataset {
             Dataset::Episodes => write!(f, "episodes"),
             Dataset::Companies => write!(f, "companies"),
             Dataset::Networks => write!(f, "networks")
+        }
+    }
+}
+
+
+impl FromStr for Dataset {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
+        match s.as_str() {
+            "movies" => Ok(Dataset::Movies),
+            "tv_shows" => Ok(Dataset::TvShows),
+            "people" => Ok(Dataset::People),
+            "seasons" => Ok(Dataset::Seasons),
+            "episodes" => Ok(Dataset::Episodes),
+            "companies" => Ok(Dataset::Companies),
+            "networks" => Ok(Dataset::Networks),
+            _ => Err(Error::UnknownDataset),
         }
     }
 }

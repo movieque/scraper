@@ -1,11 +1,13 @@
 use aws_sdk_sqs::types::SendMessageBatchRequestEntry;
 use serde::{Serialize, Deserialize};
 use super::{Dataset, Error, Result};
+use chrono::{DateTime, Utc};
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Message {
     pub dataset: Dataset,
+    pub date: Option<DateTime<Utc>>,
     pub ids: Vec<u32>,
 }
 

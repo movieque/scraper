@@ -17,7 +17,7 @@ pub async fn enqueue_messages(messages: Vec<Message>, url: &str) -> Result<()> {
     let mut messages = messages.into_iter().peekable();
     let mut futures = Vec::new();
     while let Some(_) = messages.peek() {
-        // create the futures into chunks of maximum 500 to create a limit on how many requests are sent to the sqs queue.
+        // create the futures into chunks of maximum 500 to create a limit on how many requests are sent to the sqs queue at once.
         let mut iter = Vec::new();
         for _ in 0..500 {
             // create a batch of 10 messages for single http request on each batch.
@@ -60,6 +60,7 @@ async fn queue(batch: Vec<Message>, client: &Client, url: &str) -> Result<()> {
 fn create_messages(dataset: Dataset, ids: impl Iterator<Item = u32>) -> Vec<Message> {
     let mut iter = ids.peekable();
     let mut messages = Vec::<Message>::new();
+    let date = None;
     while let Some(_) = iter.peek() {
         let mut ids = Vec::<u32>::new();
         for _ in 0..50 {
@@ -68,7 +69,7 @@ fn create_messages(dataset: Dataset, ids: impl Iterator<Item = u32>) -> Vec<Mess
             }
         }
         if !ids.is_empty() {
-            let message = Message{dataset, ids};
+            let message = Message{dataset, date, ids};
             messages.push(message);
         }
     }

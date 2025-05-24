@@ -1,6 +1,7 @@
 use aws_sdk_sqs::{config::http::HttpResponse, error::SdkError, operation::send_message_batch::SendMessageBatchError, types::BatchResultErrorEntry};
 use serde_json::Error as JsonError;
 use aws_sdk_sqs::error::BuildError;
+use reqwest::Error as ReqwestError;
 use thiserror::Error;
 
 
@@ -16,6 +17,12 @@ pub enum Error {
     SQSBatchError(Vec<BatchResultErrorEntry>),
     #[error("SQS Sdk Error: {0:?}")]
     SQSSdkError(aws_sdk_sqs::error::SdkError<SendMessageBatchError, HttpResponse>),
+    #[error("Reqwest Error: {0:?}")]
+    ReqwestError(#[from] ReqwestError),
+    #[error("Unknown dataset")]
+    UnknownDataset,
+    #[error("Dataset does not support changes")]
+    DatasetDoesNotSupportChanges,
 }
 
 impl From<&[BatchResultErrorEntry]> for Error {
