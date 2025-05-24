@@ -1,0 +1,58 @@
+version = 0.1
+
+[default]
+[default.global]
+[default.global.parameters]
+stack_name = "movieque-scraper"
+s3_bucket = "movieque-scraper-deployments"
+s3_prefix = "movieque-scraper"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = [
+    "Environment=dev"
+]
+image_repositories = []
+
+[default.build]
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy]
+[default.deploy.parameters]
+disable_rollback = false
+
+[staging]
+[staging.global]
+[staging.global.parameters]
+stack_name = "movieque-scraper-staging"
+s3_bucket = "movieque-scraper-deployments-staging"
+s3_prefix = "movieque-scraper-staging"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = [
+    "Environment=staging"
+]
+
+[staging.deploy]
+[staging.deploy.parameters]
+disable_rollback = false
+
+[production]
+[production.global]
+[production.global.parameters]
+stack_name = "movieque-scraper-production"
+s3_bucket = "movieque-scraper-deployments-production"
+s3_prefix = "movieque-scraper-production"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = [
+    "Environment=production"
+]
+
+[production.deploy]
+[production.deploy.parameters]
+disable_rollback = false

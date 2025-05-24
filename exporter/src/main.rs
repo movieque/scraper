@@ -1,6 +1,6 @@
 use lambda_runtime::{run, service_fn, LambdaEvent};
-use shared::{Dataset, queue};
 use static_init::dynamic;
+use shared::queue;
 
 mod export;
 

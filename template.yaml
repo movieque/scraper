@@ -1,0 +1,194 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Movieque scraper project with exporter, syncer, and collector functions
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name
+    
+  ApiKey:
+    Type: String
+    NoEcho: true
+    Description: API key for external services
+
+
+Globals:
+  Function:
+    Runtime: provided.al2
+    Timeout: 300
+    MemorySize: 512
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+
+
+Resources:
+  # SQS Queue for pending collection IDs
+  ScraperIdHolderQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Environment}-scraper-id-holder"
+      VisibilityTimeout: 900
+      MessageRetentionPeriod: 1209600  # 14 days
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ScraperIdHolderDLQ.Arn
+        maxReceiveCount: 3
+
+
+  # Dead Letter Queue for failed messages
+  ScraperIdHolderDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Environment}-scraper-id-holder-dlq"
+      MessageRetentionPeriod: 1209600
+
+
+  # Exporter Function
+  ExporterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Environment}-movieque-scraper-exporter"
+      CodeUri: ./target/lambda/exporter/bootstrap.zip
+      Handler: bootstrap
+      Description: Exports scraped data to external systems
+      Runtime: provided.al2023
+      Architectures:
+        - arm64
+      MemorySize: 2048
+      Timeout: 300  # 5 minutes
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref ScraperIdHolderQueue
+          API_KEY: !Ref ApiKey
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt ScraperIdHolderQueue.QueueName
+        - CloudWatchLogsFullAccess
+
+
+  # Syncer Function
+  SyncerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Environment}-movieque-scraper-syncer"
+      CodeUri: ./target/lambda/syncer/bootstrap.zip
+      Handler: bootstrap
+      Description: Syncs data and queues IDs for collection
+      Runtime: provided.al2023
+      Architectures:
+        - arm64
+      MemorySize: 256
+      Timeout: 300  # 5 minutes
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref ScraperIdHolderQueue
+          API_KEY: !Ref ApiKey
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt ScraperIdHolderQueue.QueueName
+        - CloudWatchLogsFullAccess
+      # Events:
+      #   ScheduleEvent:
+      #     Type: Schedule
+      #     Properties:
+      #       Schedule: rate(1 hour)
+      #       Description: Run syncer every hour
+
+
+  # Collector Function
+  CollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Environment}-movieque-scraper-collector"
+      CodeUri: ./target/lambda/collector/bootstrap.zip
+      Handler: bootstrap
+      Description: Collects data based on queued IDs
+      Runtime: provided.al2023
+      Architectures:
+        - arm64
+      MemorySize: 512
+      Timeout: 300  # 5 minutes
+      # ReservedConcurrency: 50
+      Environment:
+        Variables:
+          API_KEY: !Ref ApiKey
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt ScraperIdHolderQueue.QueueName
+        - CloudWatchLogsFullAccess
+      # Events:
+      #   SQSEvent:
+      #     Type: SQS
+      #     Properties:
+      #       Queue: !GetAtt ScraperIdHolderQueue.Arn
+      #       BatchSize: 1
+      #       MaximumBatchingWindowInSeconds: 5
+
+
+  # IAM Role for enhanced permissions
+  ScraperExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Environment}-movieque-scraper-execution-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ScraperPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: 
+                  - !GetAtt ScraperIdHolderQueue.Arn
+                  - !GetAtt ScraperIdHolderDLQ.Arn
+
+
+Outputs:
+  ExporterFunctionArn:
+    Description: Exporter Lambda Function ARN
+    Value: !GetAtt ExporterFunction.Arn
+    Export:
+      Name: !Sub "${Environment}-ExporterFunctionArn"
+
+
+  SyncerFunctionArn:
+    Description: Syncer Lambda Function ARN
+    Value: !GetAtt SyncerFunction.Arn
+    Export:
+      Name: !Sub "${Environment}-SyncerFunctionArn"
+
+
+  CollectorFunctionArn:
+    Description: Collector Lambda Function ARN
+    Value: !GetAtt CollectorFunction.Arn
+    Export:
+      Name: !Sub "${Environment}-CollectorFunctionArn"
+
+
+  QueueUrl:
+    Description: SQS Queue URL for scraper ID holder
+    Value: !Ref ScraperIdHolderQueue
+    Export:
+      Name: !Sub "${Environment}-ScraperIdHolderQueueUrl"
+
+
+  QueueArn:
+    Description: SQS Queue ARN for scraper ID holder
+    Value: !GetAtt ScraperIdHolderQueue.Arn
+    Export:
+      Name: !Sub "${Environment}-ScraperIdHolderQueueArn"
