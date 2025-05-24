@@ -1,19 +1,13 @@
 use futures::{io::{self, BufReader, ErrorKind}, prelude::*};
 use async_compression::futures::bufread::GzipDecoder;
 use chrono::{DateTime, Utc, Timelike};
-use serde::Deserialize;
 use reqwest::Client;
 use super::Result;
 use shared::*;
 
-
+/// This is all public data and I dont think there is no need for https.
+/// It is even better to use plain http to avoid the overhead of https.
 const HARVESTER_URL: &'static str = "http://files.tmdb.org/p/exports/";
-
-
-#[derive(Deserialize)]
-struct Movie {
-    id: u32,
-}
 
 
 pub async fn harvest_export(dataset: Dataset) -> Result<Vec<u32>> {
@@ -45,8 +39,8 @@ async fn extract(url: String) -> Result<Vec<u32>> {
     let mut ids = Vec::new();
     while let Some(result) = lines.next().await {
         let line = result?;
-        let movie: Movie = serde_json::from_str(&line)?;
-        ids.push(movie.id);
+        let object = serde_json::from_str::<Object>(&line)?;
+        ids.push(object.id);
     }
     Ok(ids)
 }

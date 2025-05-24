@@ -19,8 +19,8 @@ async fn main() -> Result<()> {
 
 
 
-async fn handler(event: LambdaEvent<Dataset>) -> Result<()> {
-    let dataset = event.payload;
+async fn handler(event: LambdaEvent<String>) -> Result<()> {
+    let dataset = event.payload.parse()?;
     let ids = export::harvest_export(dataset).await?;
     let url = queue_url();
     queue::process_ids(dataset, ids.into_iter(), &url).await?;
